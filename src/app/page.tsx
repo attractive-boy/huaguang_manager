@@ -1,126 +1,151 @@
 'use client';
 
+import {
+  LockOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import {
+  LoginFormPage,
+  ProConfigProvider,
+  ProFormCheckbox,
+  ProFormText,
+} from '@ant-design/pro-components';
+import { message, theme } from 'antd';
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
-import { PageContainer } from '@ant-design/pro-components';
-import { Card, Button, Space, Table, Tag, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { post } from '@/utils/request';
 
-const { Title } = Typography;
-
-interface DataType {
-  key: string;
-  name: string;
-  age: number;
-  address: string;
-  tags: string[];
+interface LoginResponse {
+  code: number;
+  message: string;
+  data: {
+    userId: number;
+    token: string;
+    tokenExpireTime: number;
+    userInfo: {
+      nickname: string;
+      avatar: string;
+      gender: number;
+      realName: string;
+      email: string;
+    };
+    permissions: string[];
+  };
 }
 
-export default function Home() {
-  const [loading, setLoading] = useState<boolean>(false);
+const Page = () => {
+  const { token } = theme.useToken();
 
-  const columns = [
-    {
-      title: '姓名',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string) => <a>{text}</a>,
-    },
-    {
-      title: '年龄',
-      dataIndex: 'age',
-      key: 'age',
-    },
-    {
-      title: '地址',
-      dataIndex: 'address',
-      key: 'address',
-    },
-    {
-      title: '标签',
-      key: 'tags',
-      dataIndex: 'tags',
-      render: (_: any, { tags }: { tags: string[] }) => (
-        <>
-          {tags.map((tag) => {
-            let color = tag.length > 5 ? 'geekblue' : 'green';
-            if (tag === '重要') {
-              color = 'volcano';
-            }
-            return (
-              <Tag color={color} key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
-        </>
-      ),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: DataType) => (
-        <Space size="middle">
-          <Button type="text" icon={<EditOutlined />}>编辑</Button>
-          <Button type="text" danger icon={<DeleteOutlined />}>删除</Button>
-        </Space>
-      ),
-    },
-  ];
-  
-  const data: DataType[] = [
-    {
-      key: '1',
-      name: '张三',
-      age: 32,
-      address: '北京市朝阳区',
-      tags: ['优秀', '管理员'],
-    },
-    {
-      key: '2',
-      name: '李四',
-      age: 42,
-      address: '上海市浦东新区',
-      tags: ['重要'],
-    },
-    {
-      key: '3',
-      name: '王五',
-      age: 32,
-      address: '广州市天河区',
-      tags: ['普通'],
-    },
-  ];
+  const handleSubmit = async (values: any) => {
+    try {
+      const response = await post<LoginResponse>('/admin/login', {
+        username: values.username,
+        password: values.password,
+      });
 
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+      if (response.code === 0) {
+        message.success('登录成功');
+        // 存储token和用户信息
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('userInfo', JSON.stringify(response.data.userInfo));
+        localStorage.setItem('permissions', JSON.stringify(response.data.permissions));
+        // 跳转到首页
+        window.location.href = '/dashboard';
+      } else {
+        message.error(response.message || '登录失败');
+      }
+    } catch (error) {
+      message.error('登录失败，请稍后重试');
+      console.error('登录错误:', error);
+    }
   };
 
   return (
-    <PageContainer
-      header={{
-        title: '华光管理系统',
-        subTitle: '基于Next.js和Ant Design Pro Components的管理系统',
+    <div
+      style={{
+        backgroundColor: 'white',
+        height: '100vh',
       }}
     >
-      <Card
-        title={<Title level={4}>用户管理</Title>}
-        extra={
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />}>新增用户</Button>
-            <Button onClick={handleRefresh}>刷新</Button>
-          </Space>
-        }
+      <LoginFormPage
+        backgroundImageUrl="https://mdn.alipayobjects.com/huamei_gcee1x/afts/img/A*y0ZTS6WLwvgAAAAAAAAAAAAADml6AQ/fmt.webp"
+        logo="https://github.githubassets.com/favicons/favicon.png"
+        backgroundVideoUrl="https://gw.alipayobjects.com/v/huamei_gcee1x/afts/video/jXRBRK_VAwoAAAAAAAAAAAAAK4eUAQBr"
+        title="华光管理系统"
+        containerStyle={{
+          backgroundColor: 'rgba(0, 0, 0,0.65)',
+          backdropFilter: 'blur(4px)',
+        }}
+        subTitle="企业级管理系统"
+        onFinish={handleSubmit}
       >
-        <Table 
-          columns={columns} 
-          dataSource={data} 
-          loading={loading}
-          pagination={{ pageSize: 5 }}
+        <ProFormText
+          name="username"
+          fieldProps={{
+            size: 'large',
+            prefix: (
+              <UserOutlined
+                style={{
+                  color: token.colorText,
+                }}
+                className={'prefixIcon'}
+              />
+            ),
+          }}
+          placeholder={'用户名/手机号/邮箱'}
+          rules={[
+            {
+              required: true,
+              message: '请输入用户名/手机号/邮箱!',
+            },
+          ]}
         />
-      </Card>
-    </PageContainer>
+        <ProFormText.Password
+          name="password"
+          fieldProps={{
+            size: 'large',
+            prefix: (
+              <LockOutlined
+                style={{
+                  color: token.colorText,
+                }}
+                className={'prefixIcon'}
+              />
+            ),
+          }}
+          placeholder={'密码'}
+          rules={[
+            {
+              required: true,
+              message: '请输入密码！',
+            },
+          ]}
+        />
+        <div
+          style={{
+            marginBlockEnd: 24,
+          }}
+        >
+          <ProFormCheckbox noStyle name="autoLogin">
+            自动登录
+          </ProFormCheckbox>
+          <a
+            style={{
+              float: 'right',
+            }}
+          >
+            忘记密码
+          </a>
+        </div>
+      </LoginFormPage>
+    </div>
   );
-}
+};
+
+export default () => {
+  return (
+    <ProConfigProvider dark>
+      <Page />
+    </ProConfigProvider>
+  );
+};
