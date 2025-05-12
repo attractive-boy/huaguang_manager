@@ -12,8 +12,9 @@ import {
 } from '@ant-design/pro-components';
 import { message, theme } from 'antd';
 import type { CSSProperties } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { post } from '@/utils/request';
+import { useRouter } from 'next/navigation';
 
 interface LoginResponse {
   code: number;
@@ -35,6 +36,25 @@ interface LoginResponse {
 
 const Page = () => {
   const { token } = theme.useToken();
+  const router = useRouter();
+
+  // 检查是否自动登录
+  useEffect(() => {
+    const checkAutoLogin = async () => {
+      const savedToken = localStorage.getItem('token');
+      const autoLogin = localStorage.getItem('autoLogin') === 'true';
+      
+      if (savedToken && autoLogin) {
+      
+            // token 有效，直接跳转到首页
+            router.push('/dashboard');
+        
+        
+      }
+    };
+
+    checkAutoLogin();
+  }, [router]);
 
   const handleSubmit = async (values: any) => {
     try {
@@ -49,8 +69,16 @@ const Page = () => {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userInfo', JSON.stringify(response.data.userInfo));
         localStorage.setItem('permissions', JSON.stringify(response.data.permissions));
+        
+        // 如果选择了自动登录，保存设置
+        if (values.autoLogin) {
+          localStorage.setItem('autoLogin', 'true');
+        } else {
+          localStorage.removeItem('autoLogin');
+        }
+        
         // 跳转到首页
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       } else {
         message.error(response.message || '登录失败');
       }

@@ -3,7 +3,7 @@ import { message } from 'antd';
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+  baseURL: process.env.NEXT_PUBLIC_API_URL + '/api' || '',
   timeout: 5000,
 });
 
